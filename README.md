@@ -27,6 +27,7 @@ Resources:
 - `forgejo_repository` ([documentation](docs/resources/repository.md))
 - `forgejo_repository_action_secret` ([documentation](docs/resources/repository_action_secret.md))
 - `forgejo_repository_action_variable` ([documentation](docs/resources/repository_action_variable.md))
+- `forgejo_repository_webhook` ([documentation](docs/resources/repository_webhook.md))
 - `forgejo_ssh_key` ([documentation](docs/resources/ssh_key.md))
 - `forgejo_team` ([documentation](docs/resources/team.md))
 - `forgejo_team_member` ([documentation](docs/resources/team_member.md))
