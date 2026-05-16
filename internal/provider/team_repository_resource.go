@@ -75,6 +75,7 @@ func (r *teamRepositoryResource) Schema(_ context.Context, _ resource.SchemaRequ
 
 // Configure adds the provider configured client to the resource.
 func (r *teamRepositoryResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
 	}
@@ -101,12 +102,14 @@ func (r *teamRepositoryResource) Create(ctx context.Context, req resource.Create
 
 	var data teamRepositoryResourceModel
 
+	// Read Terraform plan data into model
 	diags := req.Plan.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	// Use Forgejo client to add a repository to a team
 	diags = addTeamRepository(
 		ctx,
 		r.client,
@@ -119,6 +122,7 @@ func (r *teamRepositoryResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
+	// Save data into Terraform state
 	diags = resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 }
@@ -129,12 +133,14 @@ func (r *teamRepositoryResource) Read(ctx context.Context, req resource.ReadRequ
 
 	var data teamRepositoryResourceModel
 
+	// Read Terraform prior state into the model
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	// Use Forgejo client to check a team repository
 	diags = checkTeamRepository(
 		ctx,
 		r.client,
@@ -147,6 +153,7 @@ func (r *teamRepositoryResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
+	// Save data into Terraform state
 	diags = resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 }
@@ -155,7 +162,10 @@ func (r *teamRepositoryResource) Read(ctx context.Context, req resource.ReadRequ
 func (r *teamRepositoryResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	defer un(trace(ctx, "Update team repository resource"))
 
-	// All writable attributes have RequiresReplace set; no in-place update possible.
+	/*
+	 * Team repositories can not be updated in-place. All writable attributes have
+	 * 'RequiresReplace' plan modifier set.
+	 */
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
@@ -164,12 +174,14 @@ func (r *teamRepositoryResource) Delete(ctx context.Context, req resource.Delete
 
 	var data teamRepositoryResourceModel
 
+	// Read Terraform prior state into the model.
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	// Use Forgejo client to remove a repository from a team
 	diags = removeTeamRepository(
 		ctx,
 		r.client,
@@ -203,13 +215,12 @@ func (r *teamRepositoryResource) ImportState(ctx context.Context, req resource.I
 		return
 	}
 
-	state := teamRepositoryResourceModel{
+	// Save data into Terraform state
+	diags := resp.State.Set(ctx, &teamRepositoryResourceModel{
 		TeamID:     types.Int64Value(teamID),
 		Owner:      types.StringValue(parts[1]),
 		Repository: types.StringValue(parts[2]),
-	}
-
-	diags := resp.State.Set(ctx, &state)
+	})
 	resp.Diagnostics.Append(diags...)
 }
 
@@ -228,7 +239,11 @@ func checkTeamRepository(ctx context.Context, client *forgejo.Client, teamID int
 		"repo":    repo,
 	})
 
-	repos, res, err := client.ListTeamRepositories(teamID, forgejo.ListTeamRepositoriesOptions{})
+	repos, res, err := client.ListTeamRepositories(teamID, forgejo.ListTeamRepositoriesOptions{
+		ListOptions: forgejo.ListOptions{
+			Page: -1,
+		},
+	})
 	if err != nil {
 		var msg string
 		if res == nil {
