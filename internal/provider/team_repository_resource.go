@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -18,8 +20,9 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = &teamRepositoryResource{}
-	_ resource.ResourceWithConfigure = &teamRepositoryResource{}
+	_ resource.Resource                = &teamRepositoryResource{}
+	_ resource.ResourceWithConfigure   = &teamRepositoryResource{}
+	_ resource.ResourceWithImportState = &teamRepositoryResource{}
 )
 
 // teamRepositoryResource is the resource implementation.
@@ -174,6 +177,39 @@ func (r *teamRepositoryResource) Delete(ctx context.Context, req resource.Delete
 		data.Owner.ValueString(),
 		data.Repository.ValueString(),
 	)
+	resp.Diagnostics.Append(diags...)
+}
+
+// ImportState handles import of an existing team repository into Terraform state.
+// The import ID must be in the format "team_id/owner/repository".
+func (r *teamRepositoryResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	defer un(trace(ctx, "Import team repository resource"))
+
+	parts := strings.SplitN(req.ID, "/", 3)
+	if len(parts) != 3 {
+		resp.Diagnostics.AddError(
+			"Invalid import ID",
+			fmt.Sprintf("Expected format 'team_id/owner/repository', got: %q", req.ID),
+		)
+		return
+	}
+
+	teamID, err := strconv.ParseInt(parts[0], 10, 64)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Invalid team_id in import ID",
+			fmt.Sprintf("team_id must be a numeric value, got: %q: %s", parts[0], err),
+		)
+		return
+	}
+
+	state := teamRepositoryResourceModel{
+		TeamID:     types.Int64Value(teamID),
+		Owner:      types.StringValue(parts[1]),
+		Repository: types.StringValue(parts[2]),
+	}
+
+	diags := resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 }
 
