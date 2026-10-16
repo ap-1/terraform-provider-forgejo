@@ -1,5 +1,9 @@
 ## Unreleased
 
+FEATURES:
+
+- **New Resource**: `forgejo_team_repository` ([documentation](docs/resources/team_repository.md))
+
 DEPENDENCIES:
 
 - Add Forgejo 17 to the CI acceptance test matrix and run the OpenTofu jobs with the OpenTofu CLI instead of a downloaded Terraform CLI
