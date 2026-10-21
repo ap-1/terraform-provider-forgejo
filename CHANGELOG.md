@@ -4,6 +4,10 @@ FEATURES:
 
 - **New Resource**: `forgejo_team_repository` ([documentation](docs/resources/team_repository.md))
 
+ENHANCEMENTS:
+
+- `forgejo_repository`: Add `topics` attribute to manage repository topics ([#228](https://github.com/svalabs/terraform-provider-forgejo/issues/228))
+
 DEPENDENCIES:
 
 - Add Forgejo 17 to the CI acceptance test matrix and run the OpenTofu jobs with the OpenTofu CLI instead of a downloaded Terraform CLI
